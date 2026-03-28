@@ -106,4 +106,6 @@ Pipfile.lock
 *.c
 *.so
 
+wandb
+wandb/*
 # End of file
