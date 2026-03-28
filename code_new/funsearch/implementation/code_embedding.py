@@ -118,7 +118,7 @@ class CodeEmbedder:
 def embed_code_to_16d(
 		code: str,
 		reference_codes: Sequence[str] | None = None,
-		model: str = 'Qwen/Qwen3-Coder-30B-A3B-Instruct',
+		model: str = 'Qwen/Qwen3-Embedding-8B',
 		base_url: str = "https://api.siliconflow.cn/v1",
 		api_key: str = "sk-asgdygqcidkcatftiifcrhwqiqsjvnrvceslnhqcanhabjpj",
 ) -> np.ndarray :
