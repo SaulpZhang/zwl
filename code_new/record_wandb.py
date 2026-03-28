@@ -24,7 +24,7 @@ def get_wandb_run():
         # Set the wandb project where this run will be logged.
         project="funsearch",
         # Track hyperparameters and run metadata.
-        name="funsearch_new",
+        name="funsearch_new_qwen3_coder_30b",
     )
     return run
 
