@@ -87,8 +87,8 @@ class Sampler:
   
   def remove_note(self, sample: str) -> str:
     try:
-      if sample.strip().startswith("```Python") and sample.strip().endswith("```"):
-        sample = sample.replace("```Python", "").replace("```", "")
+      if (sample.strip().startswith("```Python") or sample.strip().startswith("```python")) and sample.strip().endswith("```"):
+        sample = sample.replace("```python", "").replace("```Python", "").replace("```", "")
       program = code_manipulation.text_to_program(sample)
       return program.get_function(program.functions[0].name).body
     except Exception:
