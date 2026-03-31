@@ -29,7 +29,7 @@ class LLM:
 
   def __init__(self, samples_per_prompt: int) -> None:
     self._samples_per_prompt = samples_per_prompt
-    self.client = openai.OpenAI(base_url="https://api.siliconflow.cn/v1",api_key="sk-asgdygqcidkcatftiifcrhwqiqsjvnrvceslnhqcanhabjpj",timeout=120,)
+    self.client = openai.OpenAI(base_url="https://api.siliconflow.cn/v1",api_key="",timeout=120,)
 
   def _draw_sample(self, prompt: str) -> str:
     """Returns a predicted continuation of `prompt`."""

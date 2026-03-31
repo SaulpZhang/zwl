@@ -20,7 +20,7 @@ def get_wandb_run():
     run = wandb.init(
         id=run_id,
         # Set the wandb entity where your project will be logged (generally your team name).
-        entity="qijizhang5-city-university-of-hong-kong",
+        entity="",
         # Set the wandb project where this run will be logged.
         project="funsearch",
         # Track hyperparameters and run metadata.
