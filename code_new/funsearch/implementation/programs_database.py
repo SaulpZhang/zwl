@@ -17,6 +17,7 @@
 from collections.abc import Iterable, Mapping, Sequence
 import copy
 import dataclasses
+import os
 import queue
 import threading
 import time
@@ -60,6 +61,18 @@ def _reduce_score(scores_per_test: ScoresPerTest) -> float:
   return scores_per_test[list(scores_per_test.keys())[-1]]
 
 
+def _get_signature_similarity_threshold() -> float:
+  """Returns clustering threshold from env with validation."""
+  raw_value = os.getenv('SIGNATURE_SIMILARITY_THRESHOLD', '0.8')
+  try:
+    threshold = float(raw_value)
+  except ValueError as exc:
+    raise ValueError('SIGNATURE_SIMILARITY_THRESHOLD must be a float.') from exc
+  if threshold < -1.0 or threshold > 1.0:
+    raise ValueError('SIGNATURE_SIMILARITY_THRESHOLD must be in [-1, 1].')
+  return threshold
+
+
 def _get_signature(
     program: code_manipulation.Function,
     cluster_centers: Iterable[Signature],
@@ -69,9 +82,10 @@ def _get_signature(
   Rules:
     1) L2-normalize `embedding` and all cluster centers.
     2) Compute cosine similarity with each center.
-    3) If max similarity > 0.8, return the most similar existing center.
+    3) If max similarity > threshold, return the most similar existing center.
     4) Otherwise return `embedding` itself as a new cluster center.
   """
+  threshold = _get_signature_similarity_threshold()
   embedding = code_embedding.embed_code_to_16d(program.body)
   if embedding.ndim != 1:
     raise ValueError('Embedding must be a 1D vector.')
@@ -103,7 +117,7 @@ def _get_signature(
   )
   best_index = int(np.argmax(similarities))
   best_similarity = float(similarities[best_index])
-  if best_similarity > 0.8:
+  if best_similarity > threshold:
     return tuple(float(x) for x in normalized_centers[best_index])
   return tuple(float(x) for x in embedding)
 
