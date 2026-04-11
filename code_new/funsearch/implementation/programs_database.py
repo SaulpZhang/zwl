@@ -20,7 +20,6 @@ import dataclasses
 import os
 import queue
 import threading
-import time
 from typing import Any
 
 from absl import logging
@@ -182,8 +181,9 @@ class ProgramsDatabase:
         daemon=True,
     )
     self._register_worker.start()
-
-    self._last_reset_time: float = time.time()
+    if self._config.reset_period_samples <= 0:
+      raise ValueError('`reset_period_samples` must be positive.')
+    self._num_registered_since_reset: int = 0
 
   def _register_program_worker(self) -> None:
     """Consumes queued program updates and applies them serially."""
@@ -266,9 +266,10 @@ class ProgramsDatabase:
       else:
         self._register_program_in_island(program, island_id, scores_per_test)
 
-      # Check whether it is time to reset an island.
-      if (time.time() - self._last_reset_time > self._config.reset_period):
-        self._last_reset_time = time.time()
+      # Check whether it is time to reset islands by sample count.
+      self._num_registered_since_reset += 1
+      if self._num_registered_since_reset >= self._config.reset_period_samples:
+        self._num_registered_since_reset = 0
         self.reset_islands()
   
 
