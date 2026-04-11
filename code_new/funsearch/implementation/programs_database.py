@@ -73,18 +73,25 @@ def _get_signature_similarity_threshold() -> float:
   return threshold
 
 
+def _get_score_signature(scores_per_test: ScoresPerTest) -> Signature:
+  """Represents test scores as a canonical signature."""
+  return tuple(scores_per_test[k] for k in sorted(scores_per_test.keys()))
+
+
 def _get_signature(
     program: code_manipulation.Function,
+    scores_per_test: ScoresPerTest,
     cluster_centers: Iterable[Signature],
+    use_program_clustering: bool,
 ) -> Signature:
-  """Assigns a signature using L2-normalized cosine similarity.
+  """Assigns a signature in either original or clustering mode.
 
-  Rules:
-    1) L2-normalize `embedding` and all cluster centers.
-    2) Compute cosine similarity with each center.
-    3) If max similarity > threshold, return the most similar existing center.
-    4) Otherwise return `embedding` itself as a new cluster center.
+  If `use_program_clustering` is False, use test-score signature.
+  If `use_program_clustering` is True, use embedding cosine similarity.
   """
+  if not use_program_clustering:
+    return _get_score_signature(scores_per_test)
+
   threshold = _get_signature_similarity_threshold()
   embedding = code_embedding.embed_code_to_16d(program.body)
   if embedding.ndim != 1:
@@ -157,7 +164,8 @@ class ProgramsDatabase:
       self._islands.append(
           Island(template, function_to_evolve, config.functions_per_prompt,
                  config.cluster_sampling_temperature_init,
-                 config.cluster_sampling_temperature_period))
+                 config.cluster_sampling_temperature_period,
+                 use_program_clustering=config.use_program_clustering))
     self._best_score_per_island: list[float] = (
         [-float('inf')] * config.num_islands)
     self._best_program_per_island: list[code_manipulation.Function | None] = (
@@ -287,7 +295,8 @@ class ProgramsDatabase:
           self._function_to_evolve,
           self._config.functions_per_prompt,
           self._config.cluster_sampling_temperature_init,
-          self._config.cluster_sampling_temperature_period)
+          self._config.cluster_sampling_temperature_period,
+          use_program_clustering=self._config.use_program_clustering)
       self._best_score_per_island[island_id] = -float('inf')
       founder_island_id = np.random.choice(keep_islands_ids)
       founder = self._best_program_per_island[founder_island_id]
@@ -305,6 +314,7 @@ class Island:
       functions_per_prompt: int,
       cluster_sampling_temperature_init: float,
       cluster_sampling_temperature_period: int,
+      use_program_clustering: bool = True,
   ) -> None:
     self._template: code_manipulation.Program = template
     self._function_to_evolve: str = function_to_evolve
@@ -312,6 +322,7 @@ class Island:
     self._cluster_sampling_temperature_init = cluster_sampling_temperature_init
     self._cluster_sampling_temperature_period = (
         cluster_sampling_temperature_period)
+    self._use_program_clustering = use_program_clustering
 
     self._clusters: dict[Signature, Cluster] = {}
     self._num_programs: int = 0
@@ -322,7 +333,12 @@ class Island:
       scores_per_test: ScoresPerTest,
   ) -> None:
     """Stores a program on this island, in its appropriate cluster."""
-    signature = _get_signature(program, self._clusters.keys())
+    signature = _get_signature(
+        program=program,
+        scores_per_test=scores_per_test,
+        cluster_centers=self._clusters.keys(),
+        use_program_clustering=self._use_program_clustering,
+    )
     if signature not in self._clusters:
       score = _reduce_score(scores_per_test)
       self._clusters[signature] = Cluster(score, program)

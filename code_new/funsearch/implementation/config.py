@@ -25,6 +25,8 @@ class ProgramsDatabaseConfig:
     functions_per_prompt: Number of previous programs to include in prompts.
     num_islands: Number of islands to maintain as a diversity mechanism.
     reset_period: How often (in seconds) the weakest islands should be reset.
+    use_program_clustering: Whether to cluster by embedding similarity instead
+      of raw per-test score signature.
     cluster_sampling_temperature_init: Initial temperature for softmax sampling
         of clusters within an island.
     cluster_sampling_temperature_period: Period of linear decay of the cluster
@@ -33,6 +35,7 @@ class ProgramsDatabaseConfig:
   functions_per_prompt: int = 2
   num_islands: int = 3
   reset_period: int = 1 * 60 * 60
+  use_program_clustering: bool = True
   cluster_sampling_temperature_init: float = 0.1
   cluster_sampling_temperature_period: int = 30_000
 
