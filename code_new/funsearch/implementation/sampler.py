@@ -15,8 +15,11 @@
 
 """Class for sampling new programs."""
 from collections.abc import Collection, Sequence
+import os
+from pathlib import Path
 
 import numpy as np
+from dotenv import load_dotenv
 
 from funsearch.implementation import evaluator
 from funsearch.implementation import programs_database
@@ -29,7 +32,16 @@ class LLM:
 
   def __init__(self, samples_per_prompt: int) -> None:
     self._samples_per_prompt = samples_per_prompt
-    self.client = openai.OpenAI(base_url="https://api.siliconflow.cn/v1",api_key="",timeout=120,)
+    env_path = Path(__file__).resolve().parents[2] / ".env"
+    load_dotenv(dotenv_path=env_path)
+
+    base_url = os.getenv("LLM_BASE_URL", "https://api.siliconflow.cn/v1")
+    api_key = os.getenv("LLM_API_KEY", "")
+    self._model = os.getenv("LLM_MODEL", "Qwen/Qwen3-Coder-30B-A3B-Instruct")
+    if not api_key:
+      raise ValueError("LLM_API_KEY is missing. Please configure it in code_new/.env.")
+
+    self.client = openai.OpenAI(base_url=base_url, api_key=api_key, timeout=120)
 
   def _draw_sample(self, prompt: str) -> str:
     """Returns a predicted continuation of `prompt`."""
@@ -46,7 +58,7 @@ class LLM:
     user_content = f"下方代码中，方法名后缀数字越大代表版本越新。请基于现有代码，实现更高版本的新方法，严格遵循上面的规则。尽量不要生成功能相似的代码，而是要在算法逻辑上进行创新和优化。代码如下：{prompt}"
 
     llm_response = self.client.chat.completions.create(
-        model="Qwen/Qwen3-Coder-30B-A3B-Instruct",
+        model=self._model,
         messages=[
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": user_content}],
